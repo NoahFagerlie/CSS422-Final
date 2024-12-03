@@ -12,15 +12,15 @@
 _bzero
 	; implement your complete logic, including stack operations
 	STMFD sp!, {r1-r12, lr}
-	CMP     R1, #0             	;Check if n is zero
-	BEQ     end                	;If n == 0, skip the loop and return
+	CMP     R1, #0             	
+	BEQ     end                	
 	    
 	MOV     R4, R0
-	MOV     R0, #0             	;Set R1 to 0 (value to store)
+	MOV     R0, #0             	
 loop:
-	STRB    R0, [R4], #1     	;Store 0 byte at address R0 and increment R0 by 1
-	SUBS    R2, R2, #1       	;Decrement n by 1 and update condition flags
-	BNE     loop       	        ;If n != 0, repeat the loop
+	STRB    R0, [R4], #1     	
+	SUBS    R2, R2, #1       	
+	BNE     loop       	        
 	LDMFD sp!, {r1-r12, lr} 
 	MOV	pc, lr	
 
