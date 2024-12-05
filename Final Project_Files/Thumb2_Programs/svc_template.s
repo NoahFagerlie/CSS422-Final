@@ -24,9 +24,6 @@ _syscall_table_init
         EXPORT	_syscall_table_jump
 _syscall_table_jump
 	;; Implement by yourself
- 		LDR     r0, =SYSTEMCALLTBL   ; Base address of system call table
-	 	LDR     r1, [r0, r7, LSL #2] ; Load the handler address for the given syscall number in R7
-	 	BX      r1                   ; Branch to the handler
 	
 		MOV		pc, lr			
 		
