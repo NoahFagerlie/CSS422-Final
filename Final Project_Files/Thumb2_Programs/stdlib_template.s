@@ -59,10 +59,19 @@ _malloc
 ;   	none
 		EXPORT	_free
 _free
-		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
+		; Save registers that will be modified
+		PUSH    {r0, lr}            ; Save R0 (addr) and LR (return address)
+		
+		; Check if the pointer (addr) is NULL
+		CMP     r0, #0              ; Compare addr to NULL (0)
+		BEQ     _free_exit          ; If addr is NULL, skip deallocation
+		
+		; Set the system call number for SYS_FREE in R7
+		LDR     r7, =SYS_FREE       ; Load the SYS_FREE constant into R7
+		SVC     #0x00               ; Trigger the system call
+		
+_free_exit
+		; Restore registers and return
 		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
