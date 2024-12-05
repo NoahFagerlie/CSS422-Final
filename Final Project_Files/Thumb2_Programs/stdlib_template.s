@@ -84,11 +84,11 @@ _free_exit
 ;                  ed alarm. 
 		EXPORT	_alarm
 _alarm
-		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers	
-		MOV		pc, lr		
+        	STMFD   sp!, {r0-r3, lr}         ; Save registers
+        	MOV     R7, #0x01               ; System call number for `_alarm`
+        	SVC     #0x0                    ; Perform system call
+        	LDMFD   sp!, {r0-r3, lr}       ; Restore registers
+        	MOV     pc, lr                 ; Return to caller	
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void* _signal( int signum, void *handler )
@@ -100,11 +100,11 @@ _alarm
 ;             (the same as the 2nd parameter in this project)
 		EXPORT	_signal
 _signal
-		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
-		MOV		pc, lr	
+        	STMFD   sp!, {r0-r3, lr}         ; Save registers
+        	MOV     R7, #0x02               ; System call number for `_signal`
+        	SVC     #0x0                    ; Perform system call
+        	LDMFD   sp!, {r0-r3, lr}       ; Restore registers
+        	MOV     pc, lr                 ; Return to caller	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		END			
