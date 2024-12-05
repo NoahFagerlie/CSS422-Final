@@ -10,19 +10,6 @@
 ;   none
 		EXPORT	_bzero
 _bzero
-	; implement your complete logic, including stack operations
-	STMFD sp!, {r1-r12, lr}
-	CMP     R1, #0             	
-	BEQ     end                	
-	    
-	MOV     R4, R0
-	MOV     R0, #0             	
-loop:
-	STRB    R0, [R4], #1     	
-	SUBS    R2, R2, #1       	
-	BNE     loop       	        
-	LDMFD sp!, {r1-r12, lr} 
-	MOV	pc, lr	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
