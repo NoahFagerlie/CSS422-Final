@@ -10,6 +10,7 @@ extern unsigned int _alarm( unsigned int );
 
 int* alarmed;
 
+/*
 void sig_handler1( int signum ) {
 	*alarmed = 2;
 }
@@ -17,13 +18,14 @@ void sig_handler1( int signum ) {
 void sig_handler2( int signum ) {
 	*alarmed = 3;
 }
+*/
 
 int main( ) {
 	char stringA[40] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabc\0";
 	char stringB[40];
 	//_bzero( stringB, 40 );
 	_strncpy( stringB, stringA, 40 );
-	_bzero( stringA, 40 );
+	//_bzero( stringA, 40 );
 	void* mem1 = _malloc( 1024 );
 	void* mem2 = _malloc( 1024 );
 	void* mem3 = _malloc( 8192 );
@@ -31,6 +33,8 @@ int main( ) {
 	void* mem5 = _malloc( 512 );
 	void* mem6 = _malloc( 1024 );
 	void* mem7 = _malloc( 512 );
+	
+	/*
 	_free( mem6 );
 	_free( mem5 );
 	_free( mem1 );
@@ -56,5 +60,7 @@ int main( ) {
 		void* mem9 = _malloc( 4 );	
 		_free( mem9 );
 	}
+	*/
+	
 	return 0;
 }
