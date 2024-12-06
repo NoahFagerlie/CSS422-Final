@@ -31,12 +31,38 @@ _kalloc
 	;; Implement by yourself
 		MOV		pc, lr
 		
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory De-allocation
 ; void free( void *ptr )
-		EXPORT	_kfree
+        EXPORT  _kfree
 _kfree
-	;; Implement by yourself
-		MOV		pc, lr					; return from rfree( )
-		
-		END
+        PUSH    {lr}               ; Save LR
+        CMP     R0, #0             ; Check if ptr is NULL
+        BEQ     kfree_end          ; If NULL, nothing to free
+
+        LDR     R1, =MCB_TOP       ; Load MCB_TOP address into R1
+        LDR     R2, =MCB_BOT       ; Load MCB_BOT address into R2
+
+kfree_loop
+        CMP     R1, R2             ; Compare current MCB entry with MCB_BOT
+        BHI     kfree_end          ; If reached the end, done
+
+        LDRH    R3, [R1]           ; Load MCB entry
+        CMP     R3, R0             ; Compare with ptr
+        BNE     kfree_next         ; If not matching, check next entry
+
+        ; Free the block
+        MOVS    R3, #0             ; Clear the entry
+        STRH    R3, [R1]           ; Store 0 in MCB
+
+kfree_next
+        ADD     R1, R1, #2         ; Move to next MCB entry
+        B       kfree_loop         ; Repeat to find the block
+
+kfree_end
+        POP     {lr}               ; Restore LR
+        MOV     pc, lr             ; Return
+
+        END
+
