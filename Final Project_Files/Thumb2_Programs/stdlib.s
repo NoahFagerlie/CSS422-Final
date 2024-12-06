@@ -11,15 +11,17 @@
 		EXPORT	_bzero
 _bzero
 	STMFD sp!, {r1-r12, lr}
-	CMP     R1, #0
-	BEQ     end
-
+ 
 	MOV     R4, R0
 	MOV     R0, #0
-loop:
+bzero_loop
+	CMP     R1, #0
+	BEQ     bzero_end
 	STRB    R0, [R4], #1
-	SUBS    R2, R2, #1
-	BNE     loop
+	SUBS    R1, R1, #1
+	B       bzero_loop
+  
+bzero_end
 	LDMFD sp!, {r1-r12, lr}
 	MOV	pc, lr
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -57,23 +59,22 @@ _malloc
 ;   	none
 		EXPORT	_free
 _free
-		; Save registers that will be modified
-		STMFD sp!, {r1-r12, lr}
-		MOV        r3, r0
-
-		; Check if the pointer (addr) is NULL
-		CMP     r0, #0              ; Compare addr to NULL (0)
-		BEQ     _free_exit          ; If addr is NULL, skip deallocation
-
-		; Set the system call number for SYS_FREE in R7
-		LDR     r7, #0x5       ; Load the SYS_FREE constant into R7
-		SVC     #0x00               ; Trigger the system call
-
-_free_exit
-		; Restore registers and return
-		MOV        r3, r0
-		LDMFD sp!, {r1-r12, lr}
-		MOV	    pc, lr
+	; Save registers that will be modified
+	STMFD sp!, {r1-r12, lr}
+	MOV        r3, r0
+	
+	; Check if the pointer (addr) is NULL
+	CMP     r0, #0              ; Compare addr to NULL (0)
+	BEQ     free_end            ; If addr is NULL, skip deallocation
+	
+	; Set the system call number for SYS_FREE in R7
+	LDR     r7, #0x5       	    ; Load the SYS_FREE constant into R7
+	SVC     #0x00               ; Trigger the system call
+	
+free_end		    	    ; Restore registers and return
+	MOV	r3, r0
+	LDMFD sp!, {r1-r12, lr}
+	MOV	pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; unsigned int _alarm( unsigned int seconds )
