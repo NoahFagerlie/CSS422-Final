@@ -252,12 +252,14 @@ UsageFault_Handler\
                 ENDP
 SVC_Handler     PROC 		; (Step 2)
         	EXPORT  SVC_Handler               [WEAK]
-		PUSH 	{r1-r12, lr}	; Save registers
-		MOV	R0, 0x20007B00	; Invoke _syscall_table_ump
-  		STR 	R1, R0
-		POP 	{r1-r12, lr}	; Retrieve registers
-		MOV 	{pc, lr}
-		B	.	; Go back to stdlib.s
+				PUSH 		{r1-r12, lr}	; Save registers
+				LDR			R0, =0x20007B00
+				BLX			R0
+				MRS			R1, PSP
+				STR 	    R2, [R1]
+				POP			{r1-r12, lr}	; Retrieve registers
+				MOV 		pc, lr
+				B			.				; Go back to stdlib.s
                 ENDP
 DebugMon_Handler\
                 PROC
@@ -276,6 +278,7 @@ SysTick_Handler\
                 PUSH    {r1-r12, lr}     ; Save registers
                 
                 ; Invoke _timer_update
+			IMPORT	_timer_update
                 BL      _timer_update    ; Call the timer update function
                 
                 ; Restore registers
