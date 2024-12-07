@@ -201,27 +201,42 @@ __Vectors_Size  EQU     __Vectors_End - __Vectors
 
 
 ; Reset Handler
-
 Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
-        	IMPORT  __main
-	
-		; Store __initial_sp into MSP (Step 1 toward Midpoint Report)
-
-		ISB     ; Let's leave as is from the original.
+                IMPORT  __main
+                IMPORT  _systemcall_table_init    ; Initializes the system call table
+                IMPORT  _kinit                   ; Initializes the kernel
+                
+                ; Set up MSP (Main Stack Pointer)
+                LDR     R0, =__initial_sp         ; Load the initial stack pointer address
+                MSR     MSP, R0                  ; Set MSP to the initial stack pointer value
+                ISB                                ; Instruction Synchronization Barrier ensures changes take effect
+                
+                ; Call SystemInit to initialize hardware and peripherals
                 LDR     R0, =SystemInit
-        	BLX     R0
-
-		; Initialize the system call table (Step 2)
-		; Initialize the heap space (Step 2)
-		; Initialize the SysTick timer (Step 2)
-	
-		; Store __initial_user_sp into PSP (Step 1 toward Midpoint Report)
-		; Change CPU mode into unprivileged thread mode using PSP
-
+                BLX     R0                        ; Branch and link to SystemInit
+                
+                ; Initialize the kernel
+                LDR     R0, =_kinit
+                BLX     R0                        ; Branch and link to kernel initialization
+                
+                ; Initialize the system call table
+                LDR     R0, =_systemcall_table_init
+                BLX     R0                        ; Branch and link to system call table initialization
+                
+                ; Set up thread stack
+                LDR     R0, =__initial_user_sp    ; Load the initial user stack pointer address
+                MSR     PSP, R0                  ; Set PSP (Process Stack Pointer) to user stack pointer
+                
+                ; Configure CONTROL register to switch to thread mode with PSP
+                MOVS    R0, #2                   ; Set SPSEL bit: PSP for thread mode, MSP for handler mode
+                MSR     CONTROL, R0             ; Update CONTROL register
+                
+                ; Branch to main program entry point
                 LDR     R0, =__main
-                BX      R0
+                BX      R0                       ; Branch to main program
+                
                 ENDP
 
 ; Dummy Exception Handlers (infinite loops which can be modified)
