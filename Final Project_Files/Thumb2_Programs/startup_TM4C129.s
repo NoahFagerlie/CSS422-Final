@@ -271,27 +271,15 @@ PendSV_Handler\
                 EXPORT  PendSV_Handler            [WEAK]
                 B       .
                 ENDP
-SysTick_Handler\
-                PROC        ; (Step 2)
-                EXPORT  SysTick_Handler           [WEAK]
-                
-                PUSH    {r1-r12, lr}     ; Save registers
-                
-                ; Invoke _timer_update
-			IMPORT	_timer_update
-                BL      _timer_update    ; Call the timer update function
-                
-                ; Restore registers
-                POP     {r1-r12, lr}     ; Retrieve registers
-                
-                ; Change from MSP to PSP (optional step, based on context)
-                MRS     R0, CONTROL      ; Read CONTROL register
-                ORR     R0, R0, #2       ; Set bit 1 (Switch to PSP)
-                MSR     CONTROL, R0      ; Write back to CONTROL register
-                ISB                     ; Instruction Synchronization Barrier
-                
-                BX      lr               ; Return to user program
-                ENDP
+SysTick_Handler \
+    PROC
+    EXPORT  SysTick_Handler [WEAK]
+    PUSH    {r1-r12, lr}     ; Save registers
+    IMPORT  _timer_update    ; Declare the external function
+    BL      _timer_update    ; Call the timer update function
+    POP     {r1-r12, lr}     ; Restore registers
+    BX      LR               ; Return to the user program
+    ENDP
 GPIOA_Handler\
                 PROC
                 EXPORT  GPIOA_Handler [WEAK]
