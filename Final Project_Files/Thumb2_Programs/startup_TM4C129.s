@@ -36,12 +36,9 @@ __heap_base
 Heap_Mem        SPACE   Heap_Size
 __heap_limit
 
-; <h> Stack Configuration
-;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
-; </h>
 
 Handler_Stack_Size      EQU     0x00000800
-Thread_Stack_Size	EQU	0x00000800	
+Thread_Stack_Size	    EQU	    0x00000800
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
 
@@ -117,7 +114,7 @@ __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     SSI1_Handler              ;  34: SSI1 Rx and Tx
                 DCD     TIMER3A_Handler           ;  35: Timer 3 subtimer A
                 DCD     TIMER3B_Handler           ;  36: Timer 3 subtimer B
-                DCD     I2C1_Handler              ;  37: I2C1 Master and Slave                    
+                DCD     I2C1_Handler              ;  37: I2C1 Master and Slave
                 DCD     CAN0_Handler              ;  38: CAN0
                 DCD     CAN1_Handler              ;  39: CAN1
                 DCD     ETH_Handler               ;  40: Ethernet
@@ -205,38 +202,38 @@ Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
                 IMPORT  __main
-                IMPORT  _systemcall_table_init    ; Initializes the system call table
+                IMPORT  _syscall_table_init    ; Initializes the system call table
                 IMPORT  _kinit                   ; Initializes the kernel
-                
+
                 ; Set up MSP (Main Stack Pointer)
                 LDR     R0, =__initial_sp         ; Load the initial stack pointer address
                 MSR     MSP, R0                  ; Set MSP to the initial stack pointer value
                 ISB                                ; Instruction Synchronization Barrier ensures changes take effect
-                
+
                 ; Call SystemInit to initialize hardware and peripherals
                 LDR     R0, =SystemInit
                 BLX     R0                        ; Branch and link to SystemInit
-                
+
                 ; Initialize the kernel
                 LDR     R0, =_kinit
                 BLX     R0                        ; Branch and link to kernel initialization
-                
+
                 ; Initialize the system call table
-                LDR     R0, =_systemcall_table_init
+                LDR     R0, =_syscall_table_init
                 BLX     R0                        ; Branch and link to system call table initialization
-                
+
                 ; Set up thread stack
                 LDR     R0, =__initial_user_sp    ; Load the initial user stack pointer address
                 MSR     PSP, R0                  ; Set PSP (Process Stack Pointer) to user stack pointer
-                
+
                 ; Configure CONTROL register to switch to thread mode with PSP
                 MOVS    R0, #2                   ; Set SPSEL bit: PSP for thread mode, MSP for handler mode
                 MSR     CONTROL, R0             ; Update CONTROL register
-                
+
                 ; Branch to main program entry point
                 LDR     R0, =__main
                 BX      R0                       ; Branch to main program
-                
+
                 ENDP
 
 ; Dummy Exception Handlers (infinite loops which can be modified)
@@ -600,7 +597,7 @@ EBI0_Handler\
                 EXPORT  EBI0_Handler [WEAK]
                 B       .
                 ENDP
-                
+
 GPIOJ_Handler\
                 PROC
                 EXPORT  GPIOJ_Handler [WEAK]

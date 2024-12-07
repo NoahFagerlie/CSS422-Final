@@ -19,8 +19,8 @@ INVALID		EQU		-1			; an invalid id
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Memory Control Block Initialization
-		EXPORT	_heap_init
-_heap_init
+		EXPORT	_kinit
+_kinit
 	STMFD	sp!, {r1-r12,lr}	; Obligitory initialization
 	LDR R4, =MCB_TOP 	; Load MCB related values
 	LDR R5, =MAX_SIZE
@@ -32,12 +32,12 @@ _heap_init
 	MOV R1, R5
 	LSL R1, R1, #4
 	STRH R1, [R0]
-	
+
 	; Zero out the rest of the entries in the MCB
 	MOV R2, R6
 	ADD R2, R2, R7		; The offset
 	ADD R0, R0, R7
-	
+
 zeroing_loop
 	CMP R0, R2				; We're at the end?
 	BGE _heap_init_done		; then we're done
@@ -52,7 +52,7 @@ _heap_init_done
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory Allocation
-; void* _k_alloc( int size ) 
+; void* _k_alloc( int size )
                 EXPORT _kalloc
 _kalloc
 	STMFD	sp!, {r1-r12,lr}  ; Save registers and link register
@@ -88,14 +88,14 @@ _ralloc
 find_loop
     CMP R6, R7               ; Check if we've reached the end
     BHI fail                 ; If top of MCB > bottom of MCB then we failed
-    
+
 	LDRH R2, [R6]            ; Load current MCB entry (MCB[i] (16 bits)
 
     ; Check if the block is available and big enough
     AND R3, R2, #1          ; Check availability (LSB)
 	CMP R4, #0				; If memory is available then continue on
     BNE next_block           ; Skip if not available
-	
+
     LSR R3, R2, #4           ; Extract block size (bits 15-4)
     CMP R3, R0               ; Compare block size to requested size
     BLT next_block           ; Skip if block is too small
@@ -106,10 +106,10 @@ find_loop
     STRH R3, [R6]            ; Update MCB entry
 
     ; Calculate the block's memory address
-	LDR R4, =MCB_TOP	
+	LDR R4, =MCB_TOP
     SUB R3, R6, R4    		; Offset of MCB entry
     LSL R3, R3, #5           ; Multiply offset by 32 (block size) (MIN_SIZE)
-	
+
 	LDR R4, =HEAP_TOP
     ADD R0, R4, R3   		; Base address of allocated block
     BX lr                    ; Return allocated address
@@ -130,7 +130,7 @@ fail
 ; void free( void *ptr )
         EXPORT  _kfree
 _kfree
-        PUSH    {lr}               ; Save LR
+        STMFD	sp!, {r1-r12,lr}
         CMP     R0, #0             ; Check if ptr is NULL
         BEQ     kfree_end          ; If NULL, nothing to free
 
@@ -154,7 +154,7 @@ kfree_next
         B       kfree_loop         ; Repeat to find the block
 
 kfree_end
-        POP     {lr}               ; Restore LR
+        LDMFD sp!, {r1-r12,lr}               ; Restore LR
         MOV     pc, lr             ; Return
 
         END

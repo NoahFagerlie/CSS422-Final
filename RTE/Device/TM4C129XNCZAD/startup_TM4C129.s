@@ -25,33 +25,34 @@
 ;//-------- <<< Use Configuration Wizard in Context Menu >>> ------------------
 ;*/
 
-
-; <h> Stack Configuration
-;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
-; </h>
-
-Stack_Size      EQU     0x00000200
-
-                AREA    STACK, NOINIT, READWRITE, ALIGN=3
-Stack_Mem       SPACE   Stack_Size
-__initial_sp
-
-
 ; <h> Heap Configuration
 ;   <o>  Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Heap_Size       EQU     0x00000000
+Heap_Size       EQU     0x00005000
 
                 AREA    HEAP, NOINIT, READWRITE, ALIGN=3
 __heap_base
 Heap_Mem        SPACE   Heap_Size
 __heap_limit
 
+; <h> Stack Configuration
+;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
+; </h>
+
+Handler_Stack_Size      EQU     0x00000800
+Thread_Stack_Size	EQU	0x00000800	
+
+                AREA    STACK, NOINIT, READWRITE, ALIGN=3
+
+Thread_Stack_Mem		SPACE	Thread_Stack_Size
+__initial_user_sp
+Handler_Stack_Mem       SPACE   Handler_Stack_Size
+__initial_sp
+
 
                 PRESERVE8
                 THUMB
-
 
 ; Vector Table Mapped to Address 0 at Reset
 
@@ -200,17 +201,44 @@ __Vectors_Size  EQU     __Vectors_End - __Vectors
 
 
 ; Reset Handler
-
 Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
                 IMPORT  __main
-                LDR     R0, =SystemInit
-                BLX     R0
-                LDR     R0, =__main
-                BX      R0
-                ENDP
+                IMPORT  _syscall_table_init    ; Initializes the system call table
+                IMPORT  _kinit                   ; Initializes the kernel
 
+                
+                ; Set up MSP (Main Stack Pointer)
+                LDR     R0, =__initial_sp         ; Load the initial stack pointer address
+                MSR     MSP, R0                  ; Set MSP to the initial stack pointer value
+                ISB                                ; Instruction Synchronization Barrier ensures changes take effect
+                
+                ; Call SystemInit to initialize hardware and peripherals
+                LDR     R0, =SystemInit
+                BLX     R0                        ; Branch and link to SystemInit
+                
+                ; Initialize the kernel
+                LDR     R0, =_kinit
+                BLX     R0                        ; Branch and link to kernel initialization
+                
+                ; Initialize the system call table
+                LDR     R0, =_syscall_table_init
+                BLX     R0                        ; Branch and link to system call table initialization
+                
+                ; Set up thread stack
+                LDR     R0, =__initial_user_sp    ; Load the initial user stack pointer address
+                MSR     PSP, R0                  ; Set PSP (Process Stack Pointer) to user stack pointer
+                
+                ; Configure CONTROL register to switch to thread mode with PSP
+                MOVS    R0, #2                   ; Set SPSEL bit: PSP for thread mode, MSP for handler mode
+                MSR     CONTROL, R0             ; Update CONTROL register
+                
+                ; Branch to main program entry point
+                LDR     R0, =__main
+                BX      R0                       ; Branch to main program
+                
+                ENDP
 
 ; Dummy Exception Handlers (infinite loops which can be modified)
 
@@ -238,10 +266,23 @@ UsageFault_Handler\
                 EXPORT  UsageFault_Handler        [WEAK]
                 B       .
                 ENDP
-SVC_Handler     PROC
-                EXPORT  SVC_Handler               [WEAK]
-                B       .
-                ENDP
+					
+SVC_Handler 
+	IMPORT _syscall_table_jump
+    EXPORT SVC_Handler [WEAK]
+
+    PUSH {R4-R11, LR}           ; Save registers
+    MRS R0, PSP                 ; Get PSP (process stack pointer)
+    LDR R1, [R0, #24]           ; Load stacked PC
+    LDRB R7, [R1, #-2]          ; Extract SVC number (low byte of SVC instruction)
+
+	POP {R4-R11, PC}
+    BL _syscall_table_jump      ; Jump to appropriate system call handler
+
+    POP {R4-R11, PC}            ; Restore registers and return
+
+
+
 DebugMon_Handler\
                 PROC
                 EXPORT  DebugMon_Handler          [WEAK]
@@ -252,12 +293,15 @@ PendSV_Handler\
                 EXPORT  PendSV_Handler            [WEAK]
                 B       .
                 ENDP
-SysTick_Handler\
-                PROC
-                EXPORT  SysTick_Handler           [WEAK]
-                B       .
-                ENDP
-
+SysTick_Handler \
+    PROC
+    EXPORT  SysTick_Handler [WEAK]
+    PUSH    {r1-r12, lr}     ; Save registers
+    IMPORT  _timer_update    ; Declare the external function
+    BL      _timer_update    ; Call the timer update function
+    POP     {r1-r12, lr}     ; Restore registers
+    BX      LR               ; Return to the user program
+    ENDP
 GPIOA_Handler\
                 PROC
                 EXPORT  GPIOA_Handler [WEAK]
@@ -992,7 +1036,7 @@ GPIOT_Handler\
 
                 IF      :DEF:__MICROLIB
 
-                EXPORT  __initial_sp
+                EXPORT  __initial_user_sp
                 EXPORT  __heap_base
                 EXPORT  __heap_limit
 
@@ -1003,9 +1047,9 @@ GPIOT_Handler\
 __user_initial_stackheap
 
                 LDR     R0, =  Heap_Mem
-                LDR     R1, =(Stack_Mem + Stack_Size)
+                LDR     R1, =(Thread_Stack_Mem + Thread_Stack_Size)
                 LDR     R2, = (Heap_Mem +  Heap_Size)
-                LDR     R3, = Stack_Mem
+                LDR     R3, = Thread_Stack_Mem
                 BX      LR
 
                 ALIGN
