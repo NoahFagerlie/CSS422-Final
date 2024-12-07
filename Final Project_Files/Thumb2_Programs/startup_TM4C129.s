@@ -252,11 +252,12 @@ UsageFault_Handler\
                 ENDP
 SVC_Handler     PROC 		; (Step 2)
         	EXPORT  SVC_Handler               [WEAK]
-		; Save registers 
-		; Invoke _syscall_table_ump
-		; Retrieve registers
-		; Go back to stdlib.s
-                B       .
+		PUSH 	{r1-r12, lr}	; Save registers
+		MOV	R0, 0x20007B00	; Invoke _syscall_table_ump
+  		STR 	R1, R0
+		POP 	{r1-r12, lr}	; Retrieve registers
+		MOV 	{pc, lr}
+		B	.	; Go back to stdlib.s
                 ENDP
 DebugMon_Handler\
                 PROC
@@ -271,7 +272,7 @@ PendSV_Handler\
 SysTick_Handler\
                 PROC		; (Step 2)
         	EXPORT  SysTick_Handler           [WEAK]
-		; Save registers
+		PUSH {r1-r12, lr}	; Save registers
 		; Invoke _timer_update
 		; Retrieve registers
 		; Change from MSP to PSP
