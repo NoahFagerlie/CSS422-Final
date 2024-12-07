@@ -21,35 +21,60 @@ INVALID		EQU		-1			; an invalid id
 ; Memory Control Block Initialization
 		EXPORT	_heap_init
 _heap_init
-	;; Implement by yourself
+	PUSH {r4-r7, lr}	; Obligitory initialization
+	LDR R4, =MCB_TOP 	; Load MCB related values
+	LDR R5, =MAX_SIZE
+	LDR R6, =MCB_BOT
+	LDR R7, =MCB_ENT_SZ
 
-		MOV		pc, lr
+	; Initting the first MCB entry MCB[0]
+	MOV R0, R4
+	MOV R1, R5
+	LSL R1, R1, #4
+	STRH R1, [R0]
+	
+	; Zero out the rest of the entries in the MCB
+	MOV R2, R6
+	ADD R2, R2, R7		; The offset
+	ADD R0, R0, R7
+	
+zeroing_loop
+	CMP R0, R2				; We're at the end?
+	BGE _heap_init_done		; then we're done
+	MOV R3, #0				; Prepare zero out
+	STRH R3, [R0]			; Zero out
+	ADD R0, R0, R7			; Increment
+	B zeroing_loop
+
+_heap_init_done
+	POP {r4-r7, pc}
+	MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory Allocation
 ; void* _k_alloc( int size ) CURRENTLY UNTESTED
                 EXPORT _kalloc
 _kalloc
-    PUSH {r4-r7, lr}         ; Save registers and link register
-    MOV r4, r0               ; Store requested size in r4
+	PUSH {R4-R7, LR}         ; Save registers and link register
+    MOV R4, R0               ; Store requested size in r4
     BL _align_to_power_of_2  ; Align size to nearest power of 2
-    MOV r5, r0               ; Store aligned size in r5
-    LDR r6, =MCB_TOP       ; Load the start of the mcb
-    LDR r7, =MCB_BOT         ; Load the end of the mcb
+    MOV R5, R0               ; Store aligned size in r5
+    LDR R6, =MCB_TOP       	; Load the start of the mcb
+    LDR R7, =MCB_BOT         ; Load the end of the mcb
     BL _find_and_allocate    ; Find and allocate memory
-    POP {r4-r7, pc}          ; Restore registers and return
+    POP {R4-R7, PC}          ; Restore registers and return
 
 _align_to_power_of_2
     ; Aligh R0 (size) to the nearest power of 2
-    MOV r1, #1               ; Start with 1 (2^0)
+    MOV R1, #1               ; Start with 1 (2^0)
 align_loop
-    CMP r0, r1               ; Compare size with current power of 2
+    CMP R0, R1               ; Compare size with current power of 2
     BLS aligned              ; If size <= power of 2, it’s aligned
-    LSL r1, r1, #1           ; Shift left (multiply by 2)
+    LSL R1, R1, #1           ; Shift left (multiply by 2)
     B align_loop             ; Repeat
 aligned
-    MOV r0, r1               ; Return aligned size
-    MOV pc, lr               ; Return
+    MOV R0, R1               ; Return aligned size
+    MOV PC, LR               ; Return
 
 _find_and_allocate
     ; Find a block in the MCB and allocate it
@@ -61,37 +86,37 @@ _find_and_allocate
     ;   R0: Address of allocated memory, or 0 if failed
 
 find_loop
-    CMP r6, r7               ; Check if we've reached the end
+    CMP R6, R7               ; Check if we've reached the end
     BHI fail                 ; If so, fail
-    LDRH r2, [r6]            ; Load current MCB entry (16 bits)
+    LDRH R2, [R6]            ; Load current MCB entry (16 bits)
 
     ; Check if the block is available and big enough
-    ANDS r3, r2, #1          ; Check availability (LSB)
+    ANDS R3, R2, #1          ; Check availability (LSB)
     BNE next_block           ; Skip if not available
-    LSR r3, r2, #4           ; Extract block size (bits 15-4)
-    CMP r3, r0               ; Compare block size to requested size
+    LSR R3, R2, #4           ; Extract block size (bits 15-4)
+    CMP R3, R0               ; Compare block size to requested size
     BLT next_block           ; Skip if block is too small
 
     ; Allocation!
-    MOV r3, r2               ; Copy the current MCB entry
-    ORR r3, r3, #1           ; Mark as allocated (set LSB)
-    STRH r3, [r6]            ; Update MCB entry
+    MOV R3, R2               ; Copy the current MCB entry
+    ORR R3, R3, #1           ; Mark as allocated (set LSB)
+    STRH R3, [R6]            ; Update MCB entry
 
     ; Calculate the block's memory address
-	LDR r4, =MCB_TOP	
-    SUB r3, r6, r4    ; Offset of MCB entry
-    LSL r3, r3, #5           ; Multiply offset by 32 (block size)
-	LDR r4, =HEAP_TOP
-    ADD r0, r4, r3   ; Base address of allocated block
+	LDR R4, =MCB_TOP	
+    SUB R3, R6, R4    ; Offset of MCB entry
+    LSL R3, R3, #5           ; Multiply offset by 32 (block size)
+	LDR R4, =HEAP_TOP
+    ADD R0, R4, R3   ; Base address of allocated block
     BX lr                    ; Return allocated address
 
 next_block
-    ADD r6, r6, #2           ; Move to the next MCB entry
+    ADD R6, R6, #2           ; Move to the next MCB entry
     B find_loop
 
 fail
-    MOV r0, #0
-    BX lr
+    MOV R0, #0
+    BX LR
 
 
 
