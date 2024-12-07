@@ -78,9 +78,11 @@ find_loop
     STRH r3, [r6]            ; Update MCB entry
 
     ; Calculate the block's memory address
-    SUB r3, r6, MCB_TOP    ; Offset of MCB entry
+	LDR r4, =MCB_TOP	
+    SUB r3, r6, r4    ; Offset of MCB entry
     LSL r3, r3, #5           ; Multiply offset by 32 (block size)
-    ADD r0, HEAP_TOP, r3   ; Base address of allocated block
+	LDR r4, =HEAP_TOP
+    ADD r0, r4, r3   ; Base address of allocated block
     BX lr                    ; Return allocated address
 
 next_block

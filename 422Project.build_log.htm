@@ -27,19 +27,30 @@ Project File Date:  12/05/2024
 <h2>Output:</h2>
 *** Using Compiler 'V6.22', folder: 'C:\Users\Julian\AppData\Local\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'Target_1'
-"Final Project_Files/Thumb2_Programs/stdlib.s", line 19: Error: A1167E: Invalid line start 
-   19 0000000e loop:
-"Final Project_Files/Thumb2_Programs/stdlib.s", line 69 (column 15): Error: A1152E: Unexpected operator
-   69 0000002c   LDR     r7, #0x5       ; Load the SYS_FREE constant into R7
-                             ^
-2 Errors, 0 Warnings
-assembling stdlib.s...
-assembling timer.s...
-assembling heap.s...
-assembling svc.s...
+"Final Project_Files/Thumb2_Programs/startup_TM4C129.s", line 256 (column 10): Warning: A1865W: '#' not seen before constant expression
+  256 0000001a   MOV R0, 0x20007B00 ; Invoke _syscall_table_ump
+                        ^
+"Final Project_Files/Thumb2_Programs/startup_TM4C129.s", line 256: Error: A1871E: Immediate 0x20007B00 cannot be represented by 0-255 shifted left by 0-23 or duplicated in all, odd or even bytes
+  256 0000001a   MOV R0, 0x20007B00 ; Invoke _syscall_table_ump
+"Final Project_Files/Thumb2_Programs/startup_TM4C129.s", line 257 (column 14): Error: A1114E: Expected register relative expression
+  257 0000001c     STR  R1, R0
+                            ^
+"Final Project_Files/Thumb2_Programs/startup_TM4C129.s", line 259 (column 8): Error: A1647E: Bad register name symbol, expected Integer register
+  259 00000020   MOV  {pc, lr}
+                      ^
+3 Errors, 1 Warning
 assembling startup_TM4C129.s...
+"Final Project_Files/Thumb2_Programs/stdlib.s", line 89 (column 14): Error: A1152E: Unexpected operator
+   89 00000052  LDR     r7, #0x5            ; Load the SYS_FREE constant into R7
+                            ^
+1 Error, 0 Warnings
+assembling stdlib.s...
+"Final Project_Files/Thumb2_Programs/heap.s", line 131: Warning: A1581W: Added 2 bytes of padding at address 0x86
+  131 00000088         END
+0 Errors, 1 Warning
+assembling heap.s...
 linking...
-.\422Project.axf: error: L6002U: Could not open file .\stdlib.o: No such file or directory
+.\422Project.axf: error: L6002U: Could not open file .\startup_tm4c129.o: No such file or directory
 Not enough information to list image symbols.
 Not enough information to list load addresses in the image map.
 Finished: 2 information, 0 warning, 0 error and 1 fatal error messages.
