@@ -35,21 +35,33 @@ bzero_end
 ;   dest
 		EXPORT	_strncpy
 _strncpy
-		; r0 = dest
-		; r1 = src
-		; r2 = size
+		; r0 = dest (param 1)
+		; r1 = src (param 2)
+		; r2 = size (param 3)
 		; r3 = a copy of original dest
 		; r4 = src[i]
 		STMFD	sp!, {r1-r12,lr}
-		MOV		r3, r0				; r3 = dest
-_strncpy_loop						; while( ) {
+		MOV		r3, r0				; r3 = dest (we save the original)
+		
+_strncpy_loop
+			CMP     r2, #0				;   check if size is 0
+			BEQ     _strncpy_pad		; 	lets pad the rest of the 
 			SUBS	r2, r2, #1			; 	size--;
-			BMI		_strncpy_return		; 	if ( size < 0 ) break;
-			LDRB	r4, [r1], #0x1		; 	r4 = [src++];
-			STRB	r4, [r0], #0x1		;	[dest++] = r4;
-			CMP		r4, #0				;
-			BEQ		_strncpy_return		;	if ( r4 = '\0' ) break;
-			B		_strncpy_loop		; }
+			
+			LDRB	r4, [r1], #1		; 	r4 = [src++];
+			STRB	r4, [r0], #1		;	[dest++] = r4;
+			CMP		r4, #0				;    Are we done?
+			BEQ		_strncpy_pad		;	if we're done, lets pad the rest (if necessary)
+			B		_strncpy_loop		;
+			
+_strncpy_pad
+			CMP     r2, #0               ; Check if size == 0
+			BEQ     _strncpy_return      ; If size == 0, return
+			MOV     r4, #0               ; Load null terminator into r4
+			STRB    r4, [r0], #1         ; Pad [dest++] with '\0'
+			SUB     r2, r2, #1           ; size--;
+			B       _strncpy_pad         ; Repeat padding			
+			
 _strncpy_return
 			MOV		r0, r3				; return dest;
 			LDMFD	sp!, {r1-r12,lr}

@@ -21,7 +21,7 @@ INVALID		EQU		-1			; an invalid id
 ; Memory Control Block Initialization
 		EXPORT	_heap_init
 _heap_init
-	PUSH {r4-r7, lr}	; Obligitory initialization
+	STMFD	sp!, {r1-r12,lr}	; Obligitory initialization
 	LDR R4, =MCB_TOP 	; Load MCB related values
 	LDR R5, =MAX_SIZE
 	LDR R6, =MCB_BOT
@@ -47,22 +47,22 @@ zeroing_loop
 	B zeroing_loop
 
 _heap_init_done
-	POP {r4-r7, pc}
+	LDMFD	sp!, {r1-r12,lr}
 	MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory Allocation
-; void* _k_alloc( int size ) CURRENTLY UNTESTED
+; void* _k_alloc( int size ) 
                 EXPORT _kalloc
 _kalloc
-	PUSH {R4-R7, LR}         ; Save registers and link register
+	STMFD	sp!, {r1-r12,lr}  ; Save registers and link register
     MOV R4, R0               ; Store requested size in r4
     BL _align_to_power_of_2  ; Align size to nearest power of 2
     MOV R5, R0               ; Store aligned size in r5
     LDR R6, =MCB_TOP       	; Load the start of the mcb
     LDR R7, =MCB_BOT         ; Load the end of the mcb
-    BL _find_and_allocate    ; Find and allocate memory
-    POP {R4-R7, PC}          ; Restore registers and return
+    BL _ralloc    ; Find and allocate memory
+    LDMFD sp!, {r1-r12,lr}          ; Restore registers and return
 
 _align_to_power_of_2
     ; Aligh R0 (size) to the nearest power of 2
@@ -76,7 +76,7 @@ aligned
     MOV R0, R1               ; Return aligned size
     MOV PC, LR               ; Return
 
-_find_and_allocate
+_ralloc
     ; Find a block in the MCB and allocate it
     ; Inputs:
     ;   R0: size
@@ -87,12 +87,15 @@ _find_and_allocate
 
 find_loop
     CMP R6, R7               ; Check if we've reached the end
-    BHI fail                 ; If so, fail
-    LDRH R2, [R6]            ; Load current MCB entry (16 bits)
+    BHI fail                 ; If top of MCB > bottom of MCB then we failed
+    
+	LDRH R2, [R6]            ; Load current MCB entry (MCB[i] (16 bits)
 
     ; Check if the block is available and big enough
-    ANDS R3, R2, #1          ; Check availability (LSB)
+    AND R3, R2, #1          ; Check availability (LSB)
+	CMP R4, #0				; If memory is available then continue on
     BNE next_block           ; Skip if not available
+	
     LSR R3, R2, #4           ; Extract block size (bits 15-4)
     CMP R3, R0               ; Compare block size to requested size
     BLT next_block           ; Skip if block is too small
@@ -104,10 +107,11 @@ find_loop
 
     ; Calculate the block's memory address
 	LDR R4, =MCB_TOP	
-    SUB R3, R6, R4    ; Offset of MCB entry
-    LSL R3, R3, #5           ; Multiply offset by 32 (block size)
+    SUB R3, R6, R4    		; Offset of MCB entry
+    LSL R3, R3, #5           ; Multiply offset by 32 (block size) (MIN_SIZE)
+	
 	LDR R4, =HEAP_TOP
-    ADD R0, R4, R3   ; Base address of allocated block
+    ADD R0, R4, R3   		; Base address of allocated block
     BX lr                    ; Return allocated address
 
 next_block
