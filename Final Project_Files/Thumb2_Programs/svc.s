@@ -54,29 +54,6 @@ _syscall_table_jump
         MOV     pc, lr     
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; System Call: Alarm
-; unsigned int _alarm(unsigned int seconds)
-; Sets a timer for a specified number of seconds.
-        EXPORT  _alarm
-_alarm
-        STMFD   SP!, {R1-R12, LR}        ; Save registers
-        MOV     R7, #SYS_ALARM           ; Set system call ID for alarm
-        SVC     #0                       ; Trigger the supervisor call (SVC)
-        LDMFD   SP!, {R1-R12, LR}        ; Restore registers
-        MOV     PC, LR                   ; Return to caller
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; System Call: Signal
-; void* _signal(int signum, void* handler)
-; Installs a user-defined signal handler for the specified signal.
-        EXPORT  _signal
-_signal
-        STMFD   SP!, {R1-R12, LR}        ; Save registers
-        MOV     R7, #SYS_SIGNAL          ; Set system call ID for signal
-        SVC     #0                       ; Trigger the supervisor call (SVC)
-        LDMFD   SP!, {R1-R12, LR}        ; Restore registers
-        MOV     PC, LR                   ; Return to caller
-
         END
 
 
