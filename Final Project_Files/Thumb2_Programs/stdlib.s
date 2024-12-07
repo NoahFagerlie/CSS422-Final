@@ -35,13 +35,13 @@ bzero_end
 ;   dest
 		EXPORT	_strncpy
 _strncpy
-			; r0 = dest
-			; r1 = src
-			; r2 = size
-			; r3 = a copy of original dest
-			; r4 = src[i]
-			STMFD	sp!, {r1-r12,lr}
-			MOV		r3, r0				; r3 = dest
+		; r0 = dest
+		; r1 = src
+		; r2 = size
+		; r3 = a copy of original dest
+		; r4 = src[i]
+		STMFD	sp!, {r1-r12,lr}
+		MOV		r3, r0				; r3 = dest
 _strncpy_loop						; while( ) {
 			SUBS	r2, r2, #1			; 	size--;
 			BMI		_strncpy_return		; 	if ( size < 0 ) break;
@@ -93,6 +93,38 @@ free_end		    	    ; Restore registers and return
 			MOV	r3, r0
 			LDMFD sp!, {r1-r12, lr}
 			MOV	pc, lr
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; unsigned int _alarm( unsigned int seconds )
+; Parameters
+;   seconds - seconds when a SIGALRM signal should be delivered to the calling program
+; Return value
+;   unsigned int - the number of seconds remaining until any previously scheduled alarm
+;                  was due to be delivered, or zero if there was no previously schedul-
+;                  ed alarm.
+		EXPORT	_alarm
+_alarm
+        	STMFD   sp!, {r0-r3, lr}         ; Save registers
+        	MOV     R7, #0x1               ; System call number for `_alarm`
+        	SVC     #0x0                    ; Perform system call
+        	LDMFD   sp!, {r0-r3, lr}       ; Restore registers
+        	MOV     pc, lr                 ; Return to caller
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; void* _signal( int signum, void *handler )
+; Parameters
+;   signum - a signal number (assumed to be 14 = SIGALRM)
+;   handler - a pointer to a user-level signal handling function
+; Return value
+;   void*   - a pointer to the user-level signal handling function previously handled
+;             (the same as the 2nd parameter in this project)
+		EXPORT	_signal
+_signal
+        	STMFD   sp!, {r0-r3, lr}         ; Save registers
+        	MOV     R7, #0x2               ; System call number for `_signal`
+        	SVC     #0x0                    ; Perform system call
+        	LDMFD   sp!, {r0-r3, lr}       ; Restore registers
+        	MOV     pc, lr                 ; Return to caller
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		END
