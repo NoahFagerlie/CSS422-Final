@@ -21,34 +21,31 @@ INVALID		EQU		-1			; an invalid id
 ; Memory Control Block Initialization
 		EXPORT	_kinit
 _kinit
-	STMFD	sp!, {r1-r12,lr}	; Obligitory initialization
-	LDR R4, =MCB_TOP 	; Load MCB related values
-	LDR R5, =MAX_SIZE
-	LDR R6, =MCB_BOT
-	LDR R7, =MCB_ENT_SZ
+    EXPORT _kinit
 
-	; Initting the first MCB entry MCB[0]
-	MOV R0, R4
-	MOV R1, R5
-	LSL R1, R1, #4
-	STRH R1, [R0]
+    STMFD sp!, {r1-r12, lr}       ; Save registers
 
-	; Zero out the rest of the entries in the MCB
-	MOV R2, R6
-	ADD R2, R2, R7		; The offset
-	ADD R0, R0, R7
+    LDR R4, =MCB_TOP              ; Start of the MCB
+    LDR R5, =MAX_SIZE             ; Maximum heap size in blocks
+    MOV R1, #0x4000               ; Entire heap as free (16384 bytes)
+    STRH R1, [R4]                 ; Initialize MCB[0] with 0x4000
 
-zeroing_loop
-	CMP R0, R2				; We're at the end?
-	BGE _heap_init_done		; then we're done
-	MOV R3, #0				; Prepare zero out
-	STRH R3, [R0]			; Zero out
-	ADD R0, R0, R7			; Increment
-	B zeroing_loop
+    ; Zero out remaining MCB entries
+    ADD R0, R4, #2                ; Start from MCB[1] (0x20006802)
+    LDR R6, =MCB_BOT              ; End of the MCB (0x20006BFE)
 
-_heap_init_done
-	LDMFD	sp!, {r1-r12,lr}
-	MOV		pc, lr
+clear_loop
+    CMP R0, R6                    ; Check if we've reached the end
+    BGE done                      ; If so, exit the loop
+    MOV R3, #0                    ; Write zero
+    STRH R3, [R0]                 ; Store to current MCB entry
+    ADD R0, R0, #2                ; Move to the next MCB entry
+    B clear_loop                  ; Repeat
+
+done
+    LDMFD sp!, {r1-r12, lr}       ; Restore registers
+    BX LR                         ; Return
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory Allocation
@@ -77,11 +74,10 @@ aligned
     MOV PC, LR               ; Return
 
 _ralloc
-    ; Find a block in the MCB and allocate it
     ; Inputs:
-    ;   R0: size
-    ;   R6: start of MCB (top)
-    ;   R7: end of MCB (bottom)
+    ;   R0: size (aligned size)
+    ;   R6: start of MCB (MCB_TOP)
+    ;   R7: end of MCB (MCB_BOT)
     ; Output:
     ;   R0: Address of allocated memory, or 0 if failed
 
@@ -89,37 +85,37 @@ find_loop
     CMP R6, R7               ; Check if we've reached the end
     BHI fail                 ; If top of MCB > bottom of MCB then we failed
 
-	LDRH R2, [R6]            ; Load current MCB entry (MCB[i] (16 bits)
+    LDRH R2, [R6]            ; Load current MCB entry (MCB[i] (16 bits))
 
     ; Check if the block is available and big enough
-    AND R3, R2, #1          ; Check availability (LSB)
-	CMP R4, #0				; If memory is available then continue on
-    BNE next_block           ; Skip if not available
+    AND R3, R2, #1           ; Extract availability (LSB)
+    CMP R3, #0               ; Check if block is free
+    BNE next_block           ; If not free, skip
 
-    LSR R3, R2, #4           ; Extract block size (bits 15-4)
+    LSR R3, R2, #4           ; Extract block size (bits 15–4)
     CMP R3, R0               ; Compare block size to requested size
-    BLT next_block           ; Skip if block is too small
+    BLT next_block           ; If block is too small, skip
 
-    ; Allocation!
-    MOV R3, R2               ; Copy the current MCB entry
+    ; Allocate the block
+    MOV R3, R2               ; Copy current MCB entry
     ORR R3, R3, #1           ; Mark as allocated (set LSB)
     STRH R3, [R6]            ; Update MCB entry
 
-    ; Calculate the block's memory address
-	LDR R4, =MCB_TOP
-    SUB R3, R6, R4    		; Offset of MCB entry
-    LSL R3, R3, #5           ; Multiply offset by 32 (block size) (MIN_SIZE)
+    ; Calculate the address of the allocated block
+    LDR R4, =MCB_TOP
+    SUB R3, R6, R4           ; Offset of MCB entry
+    LSL R3, R3, #5           ; Multiply offset by 32 (block size)
 
-	LDR R4, =HEAP_TOP
-    ADD R0, R4, R3   		; Base address of allocated block
-    BX lr                    ; Return allocated address
+    LDR R4, =HEAP_TOP
+    ADD R0, R4, R3           ; Base address of allocated block
+    BX LR                    ; Return allocated address
 
 next_block
     ADD R6, R6, #2           ; Move to the next MCB entry
     B find_loop
 
 fail
-    MOV R0, #0
+    MOV R0, #0               ; No suitable block found
     BX LR
 
 

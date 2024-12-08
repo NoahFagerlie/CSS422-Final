@@ -228,6 +228,8 @@ Reset_Handler   PROC
 
                 ; Configure CONTROL register to switch to thread mode with PSP
                 MOVS    R0, #2                   ; Set SPSEL bit: PSP for thread mode, MSP for handler mode
+                MRS     R0, CONTROL
+                ORR     R0, R0, #1
                 MSR     CONTROL, R0             ; Update CONTROL register
 
                 ; Branch to main program entry point

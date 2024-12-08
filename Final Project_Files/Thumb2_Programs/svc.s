@@ -17,9 +17,6 @@ _syscall_table_init
 
 	STMFD SP!, {R1-R12, LR}        ; Save registers
 	
-	; store all these functions so that they can be initlialized in reset_handler with their relative addresses
-	; they are going to be used later when svc needs to jump to their locations
-
 	IMPORT _kalloc                 
 	LDR R0, =_kalloc               
 	LDR R1, =0x20007B10
@@ -49,7 +46,7 @@ _syscall_table_init
         EXPORT	_syscall_table_jump
 _syscall_table_jump
 
-	STMFD SP!, {R1-R12, LR}  ; Save registers
+	STMFD SP!, {R8-R12, LR}  ; Save registers
 	
 	; Code to determine proper address of function  base address = 0x20007B00
 	; offset is calculated by shifiting by multiplying number in R7 by 4 and adding it to base address
@@ -95,7 +92,7 @@ signal_method
 	 B finish
 
 finish
-		LDMFD SP!, {R1-R12, LR} ; Restore registers
+		LDMFD SP!, {R8-R12, LR} ; Restore registers
 		MOV		PC, LR			
 		END
 
